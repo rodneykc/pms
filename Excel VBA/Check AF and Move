@@ -1,0 +1,60 @@
+Sub CheckRemarkCodeAndFixIfNeeded()
+    Dim fd As FileDialog
+    Dim selectedFile As Variant
+    Dim wb As Workbook
+    Dim cellValue As String
+
+    ' Prompt user to select files
+    Set fd = Application.FileDialog(msoFileDialogFilePicker)
+    With fd
+        .AllowMultiSelect = True
+        .Title = "Select Excel files"
+        .Filters.Clear
+        .Filters.Add "Excel Files", "*.xls; *.xlsx; *.xlsm"
+        If .Show <> -1 Then
+            MsgBox "No files selected.", vbExclamation
+            Exit Sub
+        End If
+
+        ' Loop through selected files directly
+        Application.ScreenUpdating = False
+        Application.DisplayAlerts = False
+
+        For Each selectedFile In .SelectedItems
+            Set wb = Workbooks.Open(selectedFile, UpdateLinks:=False, ReadOnly:=False)
+
+            On Error Resume Next
+            cellValue = wb.Sheets(1).Range("AF2").Value
+            On Error GoTo 0
+
+            If cellValue = "Remark Code" Then
+                wb.Close SaveChanges:=False
+            Else
+                ' Run the Move_af macro
+                Call Move_af
+                wb.Close SaveChanges:=True
+            End If
+        Next selectedFile
+
+        Application.ScreenUpdating = True
+        Application.DisplayAlerts = True
+    End With
+
+    MsgBox "Process completed.", vbInformation
+End Sub
+
+Sub Move_af1()
+    Dim ws As Worksheet
+    Set ws = ActiveSheet
+
+    With ws
+        ' Insert a new column at AH
+        .Columns("AH:AH").Insert Shift:=xlToRight
+
+        ' Cut and paste column U to column AH
+        .Columns("U:U").Cut Destination:=.Columns("AH:AH")
+
+        ' Delete the original U column
+        .Columns("U:U").Delete Shift:=xlToLeft
+    End With
+End Sub

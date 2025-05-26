@@ -1,0 +1,7 @@
+2024-11-13 03:41:28.207 [pool-3-thread-1] INFO  com.rs.mv.mvvs.rmv.documentation.BasicDocumentation - [framework:30020201]project documentation update start
+2024-11-13 03:41:28.225 [pool-3-thread-1] INFO  com.rs.mv.mvvs.rmv.documentation.BasicDocumentation - [framework:30020202]project documentation update end
+2024-11-13 03:41:28.232 [pool-3-thread-1] INFO  com.rs.mv.mvvs.client.catalog.from.config.DirsConfigReader - [client:400206]parse dir config information
+2024-11-13 03:41:28.233 [pool-3-thread-1] INFO  com.rs.mv.mvvs.client.catalog.from.config.MappingConfigReader - [client:400207]parse mapping config information
+2024-11-13 03:41:28.233 [pool-3-thread-1] INFO  com.rs.mv.mvvs.common.convertor.ConvertorManager - [framework:30030201]convertors for folder(C:/Users/rodne/OneDrive/Documents/VS_Studio_WS) reload start
+2024-11-13 03:41:28.233 [pool-3-thread-1] INFO  com.rs.mv.mvvs.common.convertor.ConvertorManager - [framework:30030202]convertors for folder(C:/Users/rodne/OneDrive/Documents/VS_Studio_WS) load end
+2024-11-13 07:21:48.725 [main] WARN  com.rs.mv.mvvs.Startup - [LSP:100104]ROCKET MV BASIC EXTENSION exited

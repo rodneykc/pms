@@ -1,0 +1,10 @@
+Code_Nature = 
+IF(
+    LEFT(tmptbl_payments[CPT], 3) IN {"XC0", "XC1", "XC2", "XC3", "XC4"}, 
+    "Cosmetic", 
+    IF(
+        LEFT(tmptbl_payments[CPT], 1) IN {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"}, 
+        "Insurance", 
+        "Other"
+    )
+)

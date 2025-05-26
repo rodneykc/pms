@@ -1,0 +1,70 @@
+Public Function GenerateMonthRange()
+    Dim db As DAO.Database
+    Dim tbl As DAO.TableDef
+    Dim rs As DAO.Recordset
+    Dim startDate As Date
+    Dim endDate As Date
+    Dim currentDate As Date
+
+    On Error GoTo ErrorHandler
+    
+    ' Define the start and end date range
+    startDate = #1/1/2023#
+    endDate = #11/30/2024#
+    
+    ' Get the current database
+    Set db = CurrentDb
+
+    ' Check if the table already exists, and delete it if it does
+    If TableExists("MonthRange") Then
+        db.TableDefs.Delete "MonthRange"
+    End If
+
+    ' Create a new table
+    Debug.Print "Creating table..."
+    Set tbl = db.CreateTableDef("MonthRange")
+    tbl.Fields.Append tbl.CreateField("MonthStart", dbDate)
+    db.TableDefs.Append tbl
+    Debug.Print "Table created successfully!"
+    
+    ' Open the table as a recordset
+    Set rs = db.OpenRecordset("MonthRange", dbOpenDynaset)
+    
+    ' Loop through each month and add it to the table
+    currentDate = startDate
+    Do While currentDate <= endDate
+        rs.AddNew
+        rs!MonthStart = currentDate
+        rs.Update
+        currentDate = DateAdd("m", 1, currentDate) ' Increment by 1 month
+    Loop
+    
+    ' Clean up
+    rs.Close
+    Set rs = Nothing
+    Set tbl = Nothing
+    Set db = Nothing
+
+    MsgBox "MonthRange table generated successfully!", vbInformation
+    Exit Function
+
+ErrorHandler:
+    MsgBox "Error: " & Err.Description, vbCritical, "Error"
+    Exit Function
+End Function
+
+Public Function TableExists(tableName As String) As Boolean
+    Dim db As DAO.Database
+    Dim tdf As DAO.TableDef
+
+    Set db = CurrentDb
+    TableExists = False
+    For Each tdf In db.TableDefs
+        If tdf.Name = tableName Then
+            TableExists = True
+            Exit For
+        End If
+    Next tdf
+    Set tdf = Nothing
+    Set db = Nothing
+End Function

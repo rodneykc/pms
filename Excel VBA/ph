@@ -1,0 +1,115 @@
+SELECT 
+    [Provider], 
+    [PaymentMonth], 
+    [deposit_date] AS [Transaction Date], 
+    [DistributionAmt] AS [Amount], 
+    [Invoice] & "-" & [deposit_date] AS [Identifier],
+    [Name],
+    [Invoice],
+    [Service Date],
+    "Income" AS [Transaction Type],
+    [ProcedureCode]
+FROM qry_summation_detail
+
+UNION ALL
+
+SELECT 
+    [Title], 
+    [Payment_Date], 
+    [Payment Date], 
+    [Subtotal] * -1, 
+    [PaymentID],
+    "",
+    "",
+    "",
+    [Payment Method],
+    ""
+FROM qry_phypayments_detail
+
+UNION ALL
+
+SELECT 
+    [CostCenter], 
+    [Payment_Date], 
+    [Post Date], 
+    [Debit] * -1, 
+    [Identifier],
+    [Description],
+    [Desc],
+    "",
+    "Expense",
+    ""
+FROM qry_phyexpenses_detail
+
+UNION ALL
+
+SELECT 
+    [Provider], 
+    [Payment_Month], 
+    [Payment_Month], 
+    [AdjAmt],
+    [Identifier], 
+    [Adjustment Type],
+    "",
+    "",
+    [Payment Method],
+    ""
+FROM qry_phyadjust_sg_detail
+
+UNION ALL
+
+SELECT 
+    [Provider], 
+    [Payment_Month], 
+    [Payment_Month], 
+    [AdjAmt],
+    [Identifier],
+    [Adjustment Type],
+    "",
+    "",
+    [Payment Method],
+    ""
+FROM qry_phyadjust_ec_detail
+
+UNION ALL
+
+SELECT 
+    [Provider], 
+    [PaymentMonth], 
+    [PaymentMonth], 
+    [Subtotal]*-1,
+    [Identifier],
+    [Adjustment Type],
+    "",
+    "",
+    [Payment Method],
+    ""
+FROM qry_phyadjust_chd_detail
+
+UNION ALL
+
+SELECT 
+    [Provider], 
+    DateSerial([YY-CHD],1,1), 
+    DateSerial([YY-CHD],1,1), 
+    [Overage],
+    [Identifier],
+    [Adjustment Type]&"-Overage",
+    "",
+    "",
+    [Payment Method],
+    ""
+FROM qry_phyadjust_chd_overage
+
+UNION ALL SELECT 
+    [Title], 
+    [Payment_Date], 
+    [Payment Date], 
+    [Subtotal] * -1,
+    [PaymentID],
+    [Payee],
+    "",
+    "",
+    [Payment Method],
+    ""
+FROM qry_phyadjust_detail;

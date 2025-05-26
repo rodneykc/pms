@@ -1,0 +1,11 @@
+SELECT tbl_expenses.ID, Qry_STARSCASAExpenses1.Description, [tbl_expenses_memorized categories].Category AS CategoryNew, Qry_STARSCASAExpenses1.[Post Date], [tbl_expenses_memorized categories].CostCtr, tbl_expense_category.Title, tbl_expenses.CostCenter, [tbl_expenses_memorized categories].Title AS [Desc] INTO [tmptbl_expense_re-categorize]
+FROM tbl_expense_category INNER JOIN ((Qry_STARSCASAExpenses1 INNER JOIN [tbl_expenses_memorized categories] ON (Qry_STARSCASAExpenses1.Description LIKE [tbl_expenses_memorized categories].Desc_memorized) AND ([tbl_expenses_memorized categories].Amount IS NULL 
+                OR Qry_STARSCASAExpenses1.Debit = [tbl_expenses_memorized categories].Amount) AND ([tbl_expenses_memorized categories].BankFeed IS NULL 
+                OR Qry_STARSCASAExpenses1.Bank = [tbl_expenses_memorized categories].BankFeed)) INNER JOIN tbl_expenses ON Qry_STARSCASAExpenses1.ExpID = tbl_expenses.Identifier) ON tbl_expense_category.ID = tbl_expenses.Expense_Cat
+WHERE (((Qry_STARSCASAExpenses1.[Post Date]) > #1/1/2021#) 
+    AND ((tbl_expense_category.Title) <> [tbl_expenses_memorized categories].[Category])) 
+    OR 
+    (((Qry_STARSCASAExpenses1.[Post Date]) > #1/1/2021#) 
+    AND ((tbl_expenses.CostCenter) <> [tbl_expenses_memorized categories].[CostCtr] 
+         OR tbl_expenses.CostCenter IS NULL))
+ORDER BY Qry_STARSCASAExpenses1.Description;

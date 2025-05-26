@@ -1,0 +1,83 @@
+Option Compare Database
+
+Private Declare PtrSafe Sub Sleep Lib "kernel32" (ByVal lngMilliSeconds As Long)
+
+Public Function VersionUpdate()
+
+    Dim strFromDBName As String, strFromDBPath As String
+    If IsNull(Form_frmUpdateVersion.txtFromDBName.Value) = False Then
+        strFromDBName = Form_frmUpdateVersion.txtFromDBName.Value
+    Else
+        MsgBox "Error.  Contact your administrator.  Database Name value was not passed."
+        Exit Function
+    End If
+
+    If IsNull(Form_frmUpdateVersion.txtFromDBPath.Value) = False Then
+        strFromDBPath = Form_frmUpdateVersion.txtFromDBPath.Value
+    Else
+        MsgBox "Error.  Contact your administrator.  Database Path value was not passed."
+        Exit Function
+    End If
+
+
+    Dim strToDBName As String, strToDBPath As String
+    If IsNull(Form_frmUpdateVersion.txtToDBName.Value) = False Then
+        strToDBName = Form_frmUpdateVersion.txtToDBName.Value
+    Else
+        MsgBox "Error.  Contact your administrator.  Database Name value was not passed."
+        Exit Function
+    End If
+
+    If IsNull(Form_frmUpdateVersion.txtToDBPath.Value) = False Then
+        strToDBPath = Form_frmUpdateVersion.txtToDBPath.Value
+    Else
+        MsgBox "Error.  Contact your administrator.  Database Path value was not passed."
+        Exit Function
+    End If
+
+    '**********************************************************
+
+    Dim strFromFullPath As String, strToFullPath As String
+
+    strFromFullPath = strFromDBPath & strFromDBName
+
+    strToFullPath = strToDBPath & strToDBName
+
+    DoCmd.Hourglass True
+
+    MsgBox "The Database will now update.  This may take a few minutes.", vbInformation, "Processing"
+
+    FileCopy strFromFullPath, strToFullPath
+
+    MsgBox "Database Updated.  Database will now open.", vbInformation, "Success"
+
+    Dim appAccess As Access.Application
+    Set appAccess = CreateObject("Access.Application")
+    appAccess.OpenCurrentDatabase strToFullPath
+    appAccess.Visible = True
+    appAccess.UserControl = True
+    appAccess.RunCommand acCmdAppMaximize
+    Set appAccess = Nothing
+    Application.Quit
+
+    'Shell "MSACCESS.EXE """ & strToFullPath & """", vbNormalFocus
+    'DoCmd.CloseDatabase
+    'DoCmd.RunCommand acCmdExit
+
+    DoCmd.Hourglass False
+
+End Function
+
+Private Sub btnUpdate_Click()
+    modDoEvents.VersionUpdate
+End Sub
+
+Private Sub txtFromDBName_AfterUpdate()
+    If IsNull(Me.txtFromDBName.Value) = False Then
+        txtCaption.Visible = True
+        txtAlert.Visible = False
+    Else
+        txtCaption.Visible = False
+        txtAlert.Visible = True
+    End If
+End Sub

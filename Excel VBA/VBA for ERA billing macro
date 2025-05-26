@@ -1,0 +1,651 @@
+Public Function lastRow(column)
+    If column = "" Or column = False Then
+        column = "A"
+    End If
+    
+    lastRow = ActiveSheet.Cells(ActiveSheet.Rows.Count, column).End(xlUp).Row
+End Function
+
+Public detailRows As Long
+Public claimsRows As Long
+Public numOfColumns As Long
+Public activePage As Worksheet
+Public claimsPage As Worksheet
+
+Dim eobPage As Worksheet
+
+Public numOfAdjustments As Integer
+Public CheckNumber As String
+Public DepDate As String
+Public DepAmt As String
+
+Public EFTNum As String
+Public Payor As String
+Public PLAReasonCode As String
+Public Amt_Offset As String
+Public Adjustment_ID As String
+
+Sub StartHere()
+
+    If MsgBox("This will erase any existing data! Are you sure?", vbYesNo) = vbNo Then Exit Sub
+
+    Sheets("Tbl_835").Select
+    Call ClearEverything
+    Sheets("Tbl_ClaimAdjustments").Select
+    Call ClearEverything
+    Sheets("Tbl_EOB_Deposits").Select
+    Call ClearEverything
+    Sheets("Tbl_Other_Data").Select
+    Call ClearEverything
+
+    MsgBox ("Please select the raw input files")
+    Call SelectWBs
+
+    MsgBox ("Complete")
+End Sub
+
+Sub ClearEverything()
+    Range(Cells(2, "A"), Cells(10000, "ZZ")).ClearContents
+End Sub
+
+Sub SelectWBs()
+    Dim f As Object 'FileDialog
+    Set f = Application.FileDialog(3) 'msoFileDialogFilePicker
+
+    Dim varFile As Variant
+
+    Dim baseWorkbook As Workbook
+    Dim wbToAdd As Workbook
+
+    Set baseWorkbook = ActiveWorkbook
+
+    Dim combined835Rows As Long
+    Dim combinedClaimsRows As Long
+    Dim combinedEOBRows As Long
+
+    Dim pasteRow835 As Long
+        pasteRow835 = 2
+        
+        Dim pasteRowClaims As Long
+        pasteRowClaims = 2
+        
+        Dim pasteRowEOB As Long
+        pasteRowEOB = 2
+
+
+    With f
+    '  .AllowMultiSelect = True 'default
+    '.InitialFileName = "C:\Temp\"
+    '   Specify filters
+    '  .Filters.Clear
+    '  .Filters.Add "All Files", "*.*"
+    .Show
+    
+    ''Loop through each of the selected workbooks
+    For Each varFile In .SelectedItems
+        ''Open File
+    'If MsgBox("Are you sure you want to continue with " & varFile, vbYesNo) = vbNo Then
+        ''NEEDS TO RETURN
+        'Application.Calculation = xlCalculateAutomatic
+        'Application.DisplayAlerts = True
+        'Application.ScreenUpdating = True
+        'Exit Sub
+    'End If
+    
+        ''Opens the base workbook
+        ''Sets the base workbook to the the workbook where the file is written
+
+        Workbooks.Open varFile
+        
+        ''Sets the open workbook
+        Set wbToAdd = ActiveWorkbook
+        
+        Call eachWB
+    
+        wbToAdd.Activate
+        Sheets("Combined 835").Select
+        combined835Rows = Cells(Rows.Count, 1).End(xlUp).Row - 1
+        Range(Cells(2, "A"), Cells(combined835Rows + 1, "AM")).Select
+        Selection.Copy
+        
+        baseWorkbook.Activate
+        Sheets("Tbl_835").Select
+        Cells(pasteRow835, "A").Select
+        '*******************************************************************
+        'CHANGE THIS TO PASTE SPECIAL VALUE ONLY
+        'ActiveSheet.Paste
+        Cells(pasteRow835, "A").PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks:=False, Transpose:=False
+        '*******************************************************************
+        pasteRow835 = pasteRow835 + combined835Rows
+            
+        wbToAdd.Activate
+        Sheets("Combined Claims").Select
+        combinedClaimsRows = Cells(Rows.Count, 1).End(xlUp).Row - 1
+        Range(Cells(2, "A"), Cells(combinedClaimsRows + 1, "I")).Select
+        Selection.Copy
+        
+        baseWorkbook.Activate
+        Sheets("Tbl_ClaimAdjustments").Select
+        Cells(pasteRowClaims, "A").Select
+        ActiveSheet.Paste
+        
+        pasteRowClaims = pasteRowClaims + combinedClaimsRows
+        Debug.Print "pasteRowClaims " & pasteRowClaims
+        Cells(pasteRowClaims, "A").Select
+            
+        
+        wbToAdd.Activate
+        Sheets("Combined EOB").Select
+        combinedEOBRows = Cells(Rows.Count, 1).End(xlUp).Row - 1
+        Debug.Print "combinedEOBRows " & combinedEOBRows
+        Range(Cells(2, "A"), Cells(combinedEOBRows + 1, "G")).Select
+        Selection.Copy
+        
+        baseWorkbook.Activate
+        Sheets("Tbl_EOB_Deposits").Select
+        Cells(pasteRowEOB, "A").Select
+        Debug.Print "pasteRowEOB " & pasteRowEOB
+        '*******************************************************************
+        'CHANGE THIS TO PASTE SPECIAL VALUE ONLY
+        'ActiveSheet.Paste
+        Cells(pasteRowEOB, "A").PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks:=False, Transpose:=False
+        'Added to insert the Check number
+        '
+        
+        'Cells(pasteRowEOB, "D").Value = CheckNumber
+        '*******************************************************************
+        
+        pasteRowEOB = pasteRowEOB + combinedEOBRows
+        
+        wbToAdd.Activate
+        Sheets("Combined Other Info").Select
+        
+        Range("A:A,B:B,H:H").Delete Shift:=xlToLeft
+        
+        Range(Cells(1, "A"), Cells(lastRow("E"), "E")).Select
+        Selection.Copy
+        
+        baseWorkbook.Activate
+        Sheets("Tbl_Other_Data").Select
+        
+        If (lastRow("E") = 0) Then
+            Cells(lastRow("E"), "A").Select
+            '*******************************************************************
+            'ADD PASTE SPECIAL ON SELECTED CELLS
+            Cells(lastRow("E"), "A").PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks:=False, Transpose:=False
+            '*******************************************************************
+        Else
+            Cells(lastRow("E") + 1, "A").Select
+            '*******************************************************************
+            'ADD PASTE SPECIAL ON SELECTED CELLS
+            Cells(lastRow("E") + 1, "A").PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks:=False, Transpose:=False
+            '*******************************************************************
+        End If
+        
+        '*******************************************************************
+        'CHANGE THIS TO PASTE SPECIAL VALUE ONLY ABOVE SHOWN
+        'ActiveSheet.Paste
+        '*******************************************************************
+        
+        
+        
+        
+        Application.CutCopyMode = False
+        
+    wbToAdd.Activate
+    wbToAdd.Close SaveChanges:=False
+        Next
+    End With
+End Sub
+
+Sub eachWB()
+    Dim currentWB As Workbook
+
+    Set currentWB = ActiveWorkbook
+
+    Dim numDetailPages As Long
+
+    Dim NumOfTabs As Long
+
+        numDetailPages = Sheets.Count / 2 + 1
+
+        Sheets.Add Before:=Sheets(1)
+        ActiveSheet.Name = "Combined EOB"
+        
+        Sheets.Add Before:=Sheets(1)
+        ActiveSheet.Name = "Combined Claims"
+
+        Sheets.Add Before:=Sheets(1)
+        ActiveSheet.Name = "Combined 835"
+
+        Sheets.Add After:=Sheets(3)
+        ActiveSheet.Name = "Combined Other Info"
+        
+    Dim combined835PasteRow As Long
+
+    combined835PasteRow = 1
+    combinedClaimsPasteRow = 1
+
+    'MsgBox (numDetailPages)
+
+    For i = 1 To numDetailPages
+        'MsgBox (i & " of " & numDetailPages)
+
+        sheetDetailName = "Detail " & i
+        sheetHeaderName = "Header " & i
+        
+        On Error GoTo TestNext:
+        Sheets(sheetHeaderName).Select
+        On Error GoTo 0:
+        
+        Call HeaderTab(i)
+        
+        Sheets(sheetDetailName).Select
+        
+        ''runs the detail 1 claims and 835
+        Call DetailTab
+        
+        ''
+        ''Combine all of the 835 data
+        sheet835Name = sheetDetailName & "-835"
+        Sheets(sheet835Name).Select
+        
+            
+        If i = 1 Then
+        firstRow = 2
+        eobFirstRow = 1
+        Else
+        firstRow = 3
+        eobFirstRow = 2
+        End If
+    
+        Range(Cells(firstRow, "A"), Cells(2 + detailRows, "AM")).Select
+        Selection.Copy
+        
+    
+        Sheets("Combined 835").Select
+        Cells(combined835PasteRow, "A").Select
+    
+        ActiveSheet.Paste
+    
+    If i = 1 Then
+    AddOne = 1
+    Else
+    AddOne = 0
+    End If
+    
+    
+        combined835PasteRow = combined835PasteRow + detailRows + AddOne
+        Cells(combined835PasteRow, "A").Select
+        ''
+        ''
+        
+        ''Claims Combination
+        ''
+        
+        sheetcClaimsName = sheetDetailName & "-Claims"
+        Sheets(sheetcClaimsName).Select
+        
+        Range(Cells(firstRow, "A"), Cells(2 + claimsRows, "I")).Copy
+
+        Sheets("Combined Claims").Select
+        Cells(combinedClaimsPasteRow, "A").Select
+    
+        
+        ActiveSheet.Paste
+        
+        combinedClaimsPasteRow = combinedClaimsPasteRow + claimsRows + AddOne
+        'Cells(combinedClaimsPasteRow, "A").Select
+        ''
+        
+        
+        ''add num od details to EOB
+        ''
+        eobPage.Select
+        Cells(2, "F").Value = detailRows
+        
+        Range(Cells(eobFirstRow, "A"), Cells(2, "G")).Copy
+        
+        Sheets("Combined EOB").Select
+        
+        If i = 1 Then
+            eobPasteRow = 1
+        Else
+        
+            eobPasteRow = 1 + i
+        End If
+        
+        Cells(eobPasteRow, 1).Select
+        ActiveSheet.Paste
+        
+    Next i
+        
+    TestNext:
+        
+    'MsgBox ("DONE")
+
+End Sub
+
+
+Sub HeaderTab(i)
+    Set headerPage = ActiveSheet
+    
+    Dim NumOfProviderAdjustments
+    
+    DepAmt = Cells(4, "B").Value
+    CheckNumber = Cells(5, "B").Value
+    DepDate = Cells(6, "B").Value
+    
+    EFTNum = Cells(5, "B").Value
+    Payor = Cells(10, "B").Value
+    
+    ''Find last Row
+    lRow = lastRow("A")
+   
+    
+    ''find "Provider Level Adjustments"
+    Dim providerNPIRng As Range
+    
+    Set providerNPIRng = Range("A:A").Find("Provider NPI")
+    
+    ''Count Num of DataPoints
+     NumOfProviderAdjustments = lRow - providerNPIRng.Row
+     
+     If (NumOfProviderAdjustments > 0) Then
+     ''Copy Data
+        
+        
+        
+        Cells(providerNPIRng.Row, "F").Value = "EFTNum"
+        Cells(providerNPIRng.Row, "G").Value = "Payor"
+        Cells(providerNPIRng.Row, "H").Value = "Sheet"
+        
+        
+        For x = providerNPIRng.Row + 1 To lRow
+            If (Cells(x, "A").Value <> "" And Cells(x, "B").Value <> "") Then
+                Cells(x, "F").Value = "'" & EFTNum
+                Cells(x, "G").Value = Payor
+                Cells(x, "H").Value = headerPage.Name
+                
+                
+            End If
+            
+        Next x
+        
+        Range(Cells(providerNPIRng.Row + 1, "A"), Cells(lastRow("H"), "H")).Copy
+                
+        Sheets("Combined Other Info").Select
+        ActiveSheet.Paste
+        
+        Cells(lastRow("H") + 1, "A").Select
+        
+        
+        headerPage.Select
+            
+        Application.CutCopyMode = False
+        Cells(1, 1).Select
+        
+     End If
+     
+        
+    
+    ''Paste somewhere
+    
+    ''Adjustments
+   
+    
+        
+    Sheets.Add After:=ActiveSheet
+    ActiveSheet.Name = "EOB Deposits " & "-" & i
+    
+    Set eobPage = ActiveSheet
+    
+    Cells(1, 1).Value = "ID"
+    Cells(1, 2).Value = "Title"
+    Cells(1, 3).Value = "Compliance"
+    Cells(1, 4).Value = "CheckEFTNu"
+    Cells(1, 5).Value = "DepAmt"
+    Cells(1, 6).Value = "ClaimsTotal"
+    Cells(1, 7).Value = "DepDate"
+    
+    Cells(2, 1).Value = i
+    Cells(2, 2).Value = ""
+    Cells(2, 3).Value = ""
+    Cells(2, 4).Value = "'" & CheckNumber
+    Cells(2, 5).Value = DepAmt
+    Cells(2, 6).Value = 0
+    Cells(2, 7).Value = DepDate
+    
+   ' MsgBox (CheckNumber)
+    
+    
+   Cells(2, "D").NumberFormat = "@"
+
+End Sub
+
+Sub DetailTab()
+    ' Creates 835 for each payer
+
+    Set activePage = ActiveSheet
+    
+    
+    
+    If Cells(2, "AF").Value <> "Remark Code" Then
+        MsgBox ("Remark Code is expected to be in Column AF")
+        Exit Sub
+    End If
+    
+    ''adds the co-insurance
+    If Cells(2, "AG").Value <> "Co-Insurance" Then
+        
+        Columns("AG:AG").Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
+        Cells(2, "AG").Value = "Co-Insurance"
+    End If
+    
+    ''duplicate for claim adjustments
+    detailRows = Cells(Rows.Count, 1).End(xlUp).Row - 2
+    
+    ''adds the ID column if needed
+    If Cells(2, "A").Value = "ID" Then
+    Else
+        Columns("A:A").Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
+        Cells(2, "A").Value = "ID"
+    End If
+    
+    ''duplicate for claim adjustments
+    numOfColumns = Cells(2, Columns.Count).End(xlToLeft).column
+    
+    'Cells(2, numOfColumns).Select
+      
+    
+    'Added Text Format
+    Columns("A:A").Select
+    Selection.NumberFormat = "@"
+    
+    
+    ''add the distinct id
+    For i = 1 To detailRows
+        'i
+        'Patient Control #
+        'Payer Claim
+        'Proc Code
+        'Check #
+        
+        Cells(i + 2, "A").Value = i & "_" & Cells(i + 2, "F") & "_" & Cells(i + 2, "T") & "_" & Cells(i + 2, "W") & "_" & CheckNumber
+    Next i
+     
+    ActiveSheet.Copy After:=ActiveSheet
+    ActiveSheet.Name = activePage.Name & "-Claims"
+    
+      
+    ''runs the claims adjustment
+    Call ClaimAdjustments
+    
+    activePage.Select
+    ActiveSheet.Copy After:=ActiveSheet
+    
+    ActiveSheet.Name = activePage.Name & "-835"
+    
+    Call EightThreeFive
+        
+   
+    
+     
+     
+    
+End Sub
+
+Sub EightThreeFive()
+    Set EightThirtyFivePage = ActiveSheet
+
+    For i = numOfColumns To 2 Step -1
+        cellValue = Cells(2, i).Value
+        adjCo = Left(cellValue, 4)
+        
+        
+        If adjCo = "Adj " Then
+       
+        Columns(i).Delete
+        
+        End If
+        
+    
+    Next i
+    
+    Cells(2, "AK").Value = "CheckRef"
+    
+    'Added Text Format
+    Columns("AK:AK").Select
+    Selection.NumberFormat = "@"
+    
+    For i = 1 To detailRows
+        Cells(i + 2, "AK").Value = CheckNumber
+        
+    Next i
+    
+    Columns("B:C").Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
+    Range("B2").FormulaR1C1 = "Title"
+    Range("C2").FormulaR1C1 = "Compliance Asset Id"""
+    
+    Range(Cells(3, "AM"), Cells(2 + detailRows, "AM")).NumberFormat = "@"
+    
+End Sub
+
+Sub ClaimAdjustments()
+    Set claimsPage = ActiveSheet
+
+    For i = numOfColumns To 2 Step -1
+        cellValue = Cells(2, i).Value
+        adjCo = Left(cellValue, 4)
+        
+        
+        If cellValue = "Patient Control #" Then
+        ElseIf adjCo = "Adj " Then
+        Else
+        Columns(i).Delete
+        
+        End If
+        
+    
+    Next i
+    
+    Cells(1, 1).Select
+    
+    numOfAdjustments = Cells(2, Columns.Count).End(xlToLeft).column - 2
+
+    Dim PasteRow As Long
+    
+    If numOfAdjustments = 1 Then
+    
+    Else
+         For Z = 2 To numOfAdjustments
+         'Cells(3 + detailRows - 1, numOfAdjustments + 2)
+         Range(Cells(3, 1), Cells(3 + detailRows - 1, numOfAdjustments + 2)).Copy
+        
+        PasteRow = (detailRows * (Z - 1)) + 3
+        
+        Cells(PasteRow, "A").Select
+        'Changed from Paste to Paste Special
+        Cells(PasteRow, "A").PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks:=False, Transpose:=False
+        
+        
+    Next Z
+    
+    End If
+    
+    Cells(2, "A").Value = "Tbl_835"
+    Cells(2, "B").Value = "Tbl_835:Patient Control"
+    
+    Cells(2, 3 + numOfAdjustments).Value = "ADJ_AMT"
+    Cells(2, 4 + numOfAdjustments).Value = "CARC"
+    
+    Dim startingRow As Long
+    Dim adjustment As String
+    
+    
+    For Y = 1 To numOfAdjustments
+        adjustment = Cells(2, 2 + Y).Value
+        
+        adjustmentNumber = Right(adjustment, Len(adjustment) - Application.WorksheetFunction.Find(":", adjustment))
+        
+        'MsgBox (adjustmentNumber)
+               
+        
+        startingRow = (detailRows * Y) - detailRows + 3
+        
+        For x = 1 To detailRows
+            
+            Cells(startingRow + x - 1, 3 + numOfAdjustments).Value = Cells(startingRow + x - 1, 2 + Y).Value
+            Cells(startingRow + x - 1, 4 + numOfAdjustments).Value = adjustmentNumber
+        Next x
+              
+     
+        
+    Next Y
+
+    
+    For Z = numOfAdjustments To 1 Step -1
+        
+        Columns(Z + 2).Delete
+        
+    Next Z
+    
+    
+    For x = detailRows * numOfAdjustments To 1 Step -1
+        adj = Cells(x + 2, "C").Value
+
+        If adj = "" Then
+            Rows(x + 2).Delete
+        End If
+        
+        'if(cells(x+2
+        
+    Next x
+    
+    Columns("A:A").Select
+    Selection.Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
+    Selection.Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
+    Selection.Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
+    Range("A2").FormulaR1C1 = "ID"
+    Range("B2").FormulaR1C1 = "Title"
+    Range("C2").FormulaR1C1 = "Compliance"
+    Columns("G:G").Select
+    Selection.Copy
+    Range("D1").Select
+    Selection.Insert Shift:=xlToRight
+    Columns("G:G").Cut
+    Range("E1").Insert Shift:=xlToRight
+    Application.CutCopyMode = False
+    Range("H2").FormulaR1C1 = "CARC_REF"
+    Range("I2").FormulaR1C1 = "CARC_REF:CodeType"
+
+    claimsRows = Cells(Rows.Count, "D").End(xlUp).Row - 2
+
+    For i = 1 To claimsRows
+        Cells(i + 2, "A").Value = i
+        Cells(i + 2, "I").Value = "CARC"
+    Next i
+
+    Range(Cells(3, "H"), Cells(claimsRows + 2, "H")).NumberFormat = "@"
+    Cells(1, 1).Select
+End Sub

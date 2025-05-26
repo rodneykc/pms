@@ -1,0 +1,136 @@
+'create modGeneral
+Public Function SetWarningValue(bValue As Boolean)
+    
+    DoCmd.SetWarnings bValue
+End Function
+
+'create modAutoExec
+Public Function AtStartCheckVersion()
+
+'***********************************************************************
+'Update to where the Latest Front-end resides
+Dim strFromFPath As String, strFromFName As String
+strFromFPath = "G:\My Drive\STARS-2-Share USE (1)\BASES\"
+strFromFName = "TEST_DLAccessOpenEMR.accdb"
+'***********************************************************************
+
+If Left(Application.CurrentProject.Name, 5) = "ADMIN" Then
+    'Do Nothing
+Else
+
+   Dim strToFPath As String, strToFName As String
+   strToFPath = Replace(CurrentDb.Name, Application.CurrentProject.Name, "")
+   strToFName = Application.CurrentProject.Name
+   
+    'Is there a new version available?
+    Dim intVersion As String, strCurrentVersion As String
+    strVersion = GetVersion(strFromFPath, strFromFName)
+    strCurrentVersion = GetCurrentVersion
+    
+    If strCurrentVersion = strVersion Then
+        'Do Nothing
+    Else
+        MsgBox "A new version is available.  The database must close to update."
+        
+        DoCmd.Hourglass True
+        
+        Dim appAccess As Access.Application
+        Set appAccess = CreateObject("Access.Application")
+        appAccess.OpenCurrentDatabase strToFPath & "VersionControl.accdb", False
+        appAccess.Forms!frmUpdateVersion!txtFocus.SetFocus
+        appAccess.Forms!frmUpdateVersion!txtFromDBName.Value = strFromFName
+        appAccess.Forms!frmUpdateVersion!txtFromDBPath.Value = strFromFPath
+        appAccess.Forms!frmUpdateVersion!txtToDBName.Value = strToFName
+        appAccess.Forms!frmUpdateVersion!txtToDBPath.Value = strToFPath
+        appAccess.Forms!frmUpdateVersion!txtAlert.Visible = False
+        appAccess.Forms!frmUpdateVersion!txtCaption.Visible = True
+        appAccess.Forms!frmUpdateVersion!btnUpdate.Visible = True
+        appAccess.Visible = True
+        appAccess.UserControl = True
+        appAccess.RunCommand acCmdAppMaximize
+        Set appAccess = Nothing
+        Application.Quit
+               
+    End If
+
+End If
+Exit Function
+End Function
+
+Public Function GetCurrentVersion() As String
+ Dim prop As DAO.Property
+ Dim dbs As DAO.Database
+
+ 'On Error Resume Next
+
+ Set dbs = CurrentDb
+ 'Set the property's value
+ 'If it doesn't exist, an error 3270 "Property not found" will occur
+ GetCurrentVersion = dbs.Containers("Databases")("UserDefined").Properties("Version").Value
+
+ dbs.Close
+ 'Clean up
+ Set prop = Nothing
+ Set dbs = Nothing
+End Function
+
+Public Function GetVersion(strFromFPath, strFromFName) As String
+ Dim prop As DAO.Property
+ Dim dbs As DAO.Database
+
+ 'On Error Resume Next
+
+ Set dbs = OpenDatabase(strFromFPath & strFromFName, , True)
+ 'Set the property's value
+ 'If it doesn't exist, an error 3270 "Property not found" will occur
+ GetVersion = dbs.Containers("Databases")("UserDefined").Properties("Version").Value
+
+ dbs.Close
+ 'Clean up
+ Set prop = Nothing
+ Set dbs = Nothing
+End Function
+
+
+Public Sub SetVersion(strVersion As String)
+ Dim prop As DAO.Property
+ Dim dbs As DAO.Database
+
+ On Error Resume Next
+
+ Set dbs = CurrentDb
+ 'Set the property's value
+ 'If it doesn't exist, an error 3270 "Property not found" will occur
+ dbs.Containers("Databases")("UserDefined").Properties("Version") = _
+ strVersion
+
+ If Err <> 0 Then
+ 'If the property doesn't exist, create it
+ Set prop = dbs.CreateProperty("Version", dbText, strVersion)
+
+ 'Append it to the collection
+ dbs.Containers("Databases")("UserDefined").Properties.Append prop
+ End If
+
+ 'Now read the property
+ Debug.Print _
+  dbs.Containers("Databases")("UserDefined").Properties("Version")
+
+ 'Clean up
+ Set prop = Nothing
+ Set dbs = Nothing
+End Sub
+
+'create modFileSystem
+Option Compare Database
+Option Explicit
+
+    
+Public Declare PtrSafe Function ShellExecute Lib "shell32.dll" Alias "ShellExecuteA" (ByVal hWnd As Long, ByVal lpOperation As String, ByVal lpFile As String, ByVal lpParameters As String, ByVal lpDirectory As String, ByVal nShowCmd As Long) As Long
+    
+Public Function bFileExists(strFullPath As String) As Boolean
+    Dim fs As Object
+    Set fs = CreateObject("Scripting.FileSystemObject")
+    bFileExists = fs.FileExists(strFullPath)
+    Set fs = Nothing
+End Function
