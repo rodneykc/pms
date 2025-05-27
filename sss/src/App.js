@@ -66,7 +66,7 @@ function App() {
         </Routes>
       </main>
       
-      <style jsx>{`
+      <style jsx="true">{`
         .app-header {
           background-color: #282c34;
           padding: 1rem 2rem;
@@ -84,6 +84,9 @@ function App() {
         
         .logo {
           height: 50px;
+          width: auto;
+          max-width: 100%;
+          object-fit: contain;
         }
         
         .main-nav ul {
